@@ -1,0 +1,1570 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_SQLITE",
+      "label": "SQLite",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "frser-sqlite-datasource",
+      "pluginName": "SQLite"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "frser-sqlite-datasource",
+      "name": "SQLite",
+      "version": "3.5.0"
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.3.0+security-01"
+    },
+    {
+      "type": "panel",
+      "id": "trend",
+      "name": "Trend",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "avg_val_loss group1",
+                  "avg_val_loss group2"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    val_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'val_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS val_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'val_loss')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(val_loss) AS avg_val_loss,\n    COUNT(val_loss) AS count_val_loss,\n    SUM(val_loss * val_loss) AS sum_val_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_val_loss,\n  -- Compute bounds for one standard deviation\n  avg_val_loss - sqrt((sum_val_loss_squared / count_val_loss) - (avg_val_loss * avg_val_loss)) AS stddev_min,\n  avg_val_loss + sqrt((sum_val_loss_squared / count_val_loss) - (avg_val_loss * avg_val_loss)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    val_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'val_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS val_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'val_loss')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(val_loss) AS avg_val_loss,\n    COUNT(val_loss) AS count_val_loss,\n    SUM(val_loss * val_loss) AS sum_val_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_val_loss,\n  -- Compute bounds for one standard deviation\n  avg_val_loss - sqrt((sum_val_loss_squared / count_val_loss) - (avg_val_loss * avg_val_loss)) AS stddev_min,\n  avg_val_loss + sqrt((sum_val_loss_squared / count_val_loss) - (avg_val_loss * avg_val_loss)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Validation Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    ratio_proven\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'ratio_proven' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS ratio_proven\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'ratio_proven')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(ratio_proven) AS avg_ratio_proven,\n    COUNT(ratio_proven) AS count_ratio_proven,\n    SUM(ratio_proven * ratio_proven) AS sum_ratio_proven_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_ratio_proven,\n  -- Compute bounds for one standard deviation\n  avg_ratio_proven - sqrt((sum_ratio_proven_squared / count_ratio_proven) - (avg_ratio_proven * avg_ratio_proven)) AS stddev_min,\n  avg_ratio_proven + sqrt((sum_ratio_proven_squared / count_ratio_proven) - (avg_ratio_proven * avg_ratio_proven)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    ratio_proven\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'ratio_proven' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS ratio_proven\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'ratio_proven')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(ratio_proven) AS avg_ratio_proven,\n    COUNT(ratio_proven) AS count_ratio_proven,\n    SUM(ratio_proven * ratio_proven) AS sum_ratio_proven_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_ratio_proven,\n  -- Compute bounds for one standard deviation\n  avg_ratio_proven - sqrt((sum_ratio_proven_squared / count_ratio_proven) - (avg_ratio_proven * avg_ratio_proven)) AS stddev_min,\n  avg_ratio_proven + sqrt((sum_ratio_proven_squared / count_ratio_proven) - (avg_ratio_proven * avg_ratio_proven)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Ratio Proven",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    mean_hard_sol_log_probs\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'mean_hard_sol_log_probs' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS mean_hard_sol_log_probs\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'mean_hard_sol_log_probs')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(mean_hard_sol_log_probs) AS avg_mean_hard_sol_log_probs,\n    COUNT(mean_hard_sol_log_probs) AS count_mean_hard_sol_log_probs,\n    SUM(mean_hard_sol_log_probs * mean_hard_sol_log_probs) AS sum_mean_hard_sol_log_probs_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_mean_hard_sol_log_probs,\n  -- Compute bounds for one standard deviation\n  avg_mean_hard_sol_log_probs - sqrt((sum_mean_hard_sol_log_probs_squared / count_mean_hard_sol_log_probs) - (avg_mean_hard_sol_log_probs * avg_mean_hard_sol_log_probs)) AS stddev_min,\n  avg_mean_hard_sol_log_probs + sqrt((sum_mean_hard_sol_log_probs_squared / count_mean_hard_sol_log_probs) - (avg_mean_hard_sol_log_probs * avg_mean_hard_sol_log_probs)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_iterations,\n    mean_hard_sol_log_probs\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n      LEAD(MAX(CASE WHEN metric_name = 'mean_hard_sol_log_probs' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS mean_hard_sol_log_probs\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_iterations', 'mean_hard_sol_log_probs')\n      AND metric_type = 'iteration'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_iterations IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_iterations,\n    AVG(mean_hard_sol_log_probs) AS avg_mean_hard_sol_log_probs,\n    COUNT(mean_hard_sol_log_probs) AS count_mean_hard_sol_log_probs,\n    SUM(mean_hard_sol_log_probs * mean_hard_sol_log_probs) AS sum_mean_hard_sol_log_probs_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_iterations\n)\nSELECT \n  run_group,\n  num_iterations,\n  avg_mean_hard_sol_log_probs,\n  -- Compute bounds for one standard deviation\n  avg_mean_hard_sol_log_probs - sqrt((sum_mean_hard_sol_log_probs_squared / count_mean_hard_sol_log_probs) - (avg_mean_hard_sol_log_probs * avg_mean_hard_sol_log_probs)) AS stddev_min,\n  avg_mean_hard_sol_log_probs + sqrt((sum_mean_hard_sol_log_probs_squared / count_mean_hard_sol_log_probs) - (avg_mean_hard_sol_log_probs * avg_mean_hard_sol_log_probs)) AS stddev_max\nFROM averaged_metrics\nORDER BY run_group, num_iterations ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Mean logprobs of solution of hard problem",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 3,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    progress_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'progress_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS progress_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'progress_loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(progress_loss) AS avg_progress_loss,\n    COUNT(progress_loss) AS count_progress_loss,\n    SUM(progress_loss * progress_loss) AS sum_progress_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_progress_loss,\n    sqrt((sum_progress_loss_squared / count_progress_loss) - \n         (avg_progress_loss * avg_progress_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_progress_loss,\n  avg_progress_loss - stddev AS stddev_min,\n  avg_progress_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    progress_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'progress_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS progress_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'progress_loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(progress_loss) AS avg_progress_loss,\n    COUNT(progress_loss) AS count_progress_loss,\n    SUM(progress_loss * progress_loss) AS sum_progress_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_progress_loss,\n    sqrt((sum_progress_loss_squared / count_progress_loss) - \n         (avg_progress_loss * avg_progress_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_progress_loss,\n  avg_progress_loss - stddev AS stddev_min,\n  avg_progress_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Progress Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 3,
+        "x": 3,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    train_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'train_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS train_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'train_loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(train_loss) AS avg_train_loss,\n    COUNT(train_loss) AS count_train_loss,\n    SUM(train_loss * train_loss) AS sum_train_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_train_loss,\n    sqrt((sum_train_loss_squared / count_train_loss) - \n         (avg_train_loss * avg_train_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_train_loss,\n  avg_train_loss - stddev AS stddev_min,\n  avg_train_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    train_loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'train_loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS train_loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'train_loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(train_loss) AS avg_train_loss,\n    COUNT(train_loss) AS count_train_loss,\n    SUM(train_loss * train_loss) AS sum_train_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_train_loss,\n    sqrt((sum_train_loss_squared / count_train_loss) - \n         (avg_train_loss * avg_train_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_train_loss,\n  avg_train_loss - stddev AS stddev_min,\n  avg_train_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Train Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 3,
+        "x": 6,
+        "y": 8
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "hide": false,
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(loss) AS avg_loss,\n    COUNT(loss) AS count_loss,\n    SUM(loss * loss) AS sum_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_loss,\n    sqrt((sum_loss_squared / count_loss) - \n         (avg_loss * avg_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_loss,\n  avg_loss - stddev AS stddev_min,\n  avg_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    loss\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'loss' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS loss\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'loss')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(loss) AS avg_loss,\n    COUNT(loss) AS count_loss,\n    SUM(loss * loss) AS sum_loss_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_loss,\n    sqrt((sum_loss_squared / count_loss) - \n         (avg_loss * avg_loss)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_loss,\n  avg_loss - stddev AS stddev_min,\n  avg_loss + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 15,
+        "x": 9,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    ratio_diff_problem_pairs\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'ratio_diff_problem_pairs' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS ratio_diff_problem_pairs\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'ratio_diff_problem_pairs')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(ratio_diff_problem_pairs) AS avg_ratio_diff_problem_pairs,\n    COUNT(ratio_diff_problem_pairs) AS count_ratio_diff_problem_pairs,\n    SUM(ratio_diff_problem_pairs * ratio_diff_problem_pairs) AS sum_ratio_diff_problem_pairs_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_ratio_diff_problem_pairs,\n    sqrt((sum_ratio_diff_problem_pairs_squared / count_ratio_diff_problem_pairs) - \n         (avg_ratio_diff_problem_pairs * avg_ratio_diff_problem_pairs)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_ratio_diff_problem_pairs,\n  avg_ratio_diff_problem_pairs - stddev AS stddev_min,\n  avg_ratio_diff_problem_pairs + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    ratio_diff_problem_pairs\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'ratio_diff_problem_pairs' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS ratio_diff_problem_pairs\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'ratio_diff_problem_pairs')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(ratio_diff_problem_pairs) AS avg_ratio_diff_problem_pairs,\n    COUNT(ratio_diff_problem_pairs) AS count_ratio_diff_problem_pairs,\n    SUM(ratio_diff_problem_pairs * ratio_diff_problem_pairs) AS sum_ratio_diff_problem_pairs_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_ratio_diff_problem_pairs,\n    sqrt((sum_ratio_diff_problem_pairs_squared / count_ratio_diff_problem_pairs) - \n         (avg_ratio_diff_problem_pairs * avg_ratio_diff_problem_pairs)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_ratio_diff_problem_pairs,\n  avg_ratio_diff_problem_pairs - stddev AS stddev_min,\n  avg_ratio_diff_problem_pairs + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Ratio of Difficulty-Problem Pairs",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "num_iterations group1",
+                  "avg_final_goals_proven group1",
+                  "avg_final_goals_proven group2"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 19,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    MAX(CASE WHEN metric_name = 'final_goals_proven' THEN value END) AS final_goals_proven\n  FROM metrics\n  WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n    AND metric_name = 'final_goals_proven'\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name\n),\ngrouped_runs AS (\n  SELECT \n    run_name,\n    CASE \n      WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n      WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n    END AS run_group,\n    final_goals_proven\n  FROM grouped_metrics\n  WHERE final_goals_proven IS NOT NULL\n)\nSELECT \n  run_group,\n  SUM(final_goals_proven) AS total_final_goals_proven\nFROM grouped_runs\nWHERE run_group IS NOT NULL\nGROUP BY run_group\nORDER BY run_group;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    MAX(CASE WHEN metric_name = 'final_goals_proven' THEN value END) AS final_goals_proven\n  FROM metrics\n  WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n    AND metric_name = 'final_goals_proven'\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name\n),\ngrouped_runs AS (\n  SELECT \n    run_name,\n    CASE \n      WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n      WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n    END AS run_group,\n    final_goals_proven\n  FROM grouped_metrics\n  WHERE final_goals_proven IS NOT NULL\n)\nSELECT \n  run_group,\n  SUM(final_goals_proven) AS total_final_goals_proven\nFROM grouped_runs\nWHERE run_group IS NOT NULL\nGROUP BY run_group\nORDER BY run_group;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Final Goals Proven",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group1"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group1"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stddev_max group2"
+            },
+            "properties": [
+              {
+                "id": "custom.fillBelowTo",
+                "value": "stddev_min group2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "shades"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "avg_mu group1",
+                  "avg_mu group2"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 19,
+        "y": 17
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    mu\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'mu' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS mu\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'mu')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(mu) AS avg_mu,\n    COUNT(mu) AS count_mu,\n    SUM(mu * mu) AS sum_mu_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_mu,\n    sqrt((sum_mu_squared / count_mu) - \n         (avg_mu * avg_mu)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_mu,\n  avg_mu - stddev AS stddev_min,\n  avg_mu + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    num_steps,\n    mu\n  FROM (\n    SELECT \n      id,\n      run_name,\n      timestamp,\n      MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n      LEAD(MAX(CASE WHEN metric_name = 'mu' THEN value END)) \n        OVER (PARTITION BY run_name ORDER BY timestamp) AS mu\n    FROM metrics\n    WHERE (run_name IN (${run:sqlstring}) OR run_name IN (${run2:sqlstring}))\n      AND metric_name IN ('num_steps', 'mu')\n      AND metric_type = 'step'\n    GROUP BY id, run_name, timestamp\n  ) sub\n  WHERE num_steps IS NOT NULL\n),\naveraged_metrics AS (\n  SELECT \n    run_group,\n    num_steps,\n    AVG(mu) AS avg_mu,\n    COUNT(mu) AS count_mu,\n    SUM(mu * mu) AS sum_mu_squared\n  FROM (\n    SELECT \n      *,\n      CASE \n        WHEN run_name IN (${run:sqlstring}) THEN 'group1'\n        WHEN run_name IN (${run2:sqlstring}) THEN 'group2'\n      END AS run_group\n    FROM grouped_metrics\n  ) grouped\n  WHERE run_group IS NOT NULL\n  GROUP BY run_group, num_steps\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_group ORDER BY num_steps ASC) AS row_number,\n    run_group,\n    num_steps,\n    avg_mu,\n    sqrt((sum_mu_squared / count_mu) - \n         (avg_mu * avg_mu)) AS stddev\n  FROM averaged_metrics\n)\nSELECT \n  run_group,\n  num_steps,\n  avg_mu,\n  avg_mu - stddev AS stddev_min,\n  avg_mu + stddev AS stddev_max\nFROM numbered_metrics\nWHERE row_number % 100 = 0\nORDER BY run_group, num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Mu",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name",
+              "run_group"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    }
+  ],
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "definition": "SELECT DISTINCT run_name\nfrom metrics;",
+        "label": "Group 1",
+        "multi": true,
+        "name": "run",
+        "options": [],
+        "query": "SELECT DISTINCT run_name\nfrom metrics;",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "definition": "SELECT DISTINCT run_name\nfrom metrics;",
+        "label": "Group 2",
+        "multi": true,
+        "name": "run2",
+        "options": [],
+        "query": "SELECT DISTINCT run_name\nfrom metrics;",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Experiment Overview - SQLite - Comparison",
+  "uid": "be44a7f9qs3r4b",
+  "version": 23,
+  "weekStart": ""
+}

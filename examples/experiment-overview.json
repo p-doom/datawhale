@@ -1,0 +1,1153 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_SQLITE",
+      "label": "SQLite",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "frser-sqlite-datasource",
+      "pluginName": "SQLite"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "frser-sqlite-datasource",
+      "name": "SQLite",
+      "version": "3.5.0"
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.3.0+security-01"
+    },
+    {
+      "type": "panel",
+      "id": "trend",
+      "name": "Trend",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'val_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS val_loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'val_loss')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, val_loss\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'val_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS val_loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'val_loss')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, val_loss\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Validation Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'ratio_proven' THEN value END)) \n      OVER (ORDER BY timestamp) AS ratio_proven\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'ratio_proven')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, ratio_proven\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'ratio_proven' THEN value END)) \n      OVER (ORDER BY timestamp) AS ratio_proven\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'ratio_proven')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, ratio_proven\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Ratio Proven",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'mean_hard_sol_log_probs' THEN value END)) \n      OVER (ORDER BY timestamp) AS mean_hard_sol_log_probs\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'mean_hard_sol_log_probs')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, mean_hard_sol_log_probs\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'mean_hard_sol_log_probs' THEN value END)) \n      OVER (ORDER BY timestamp) AS mean_hard_sol_log_probs\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'mean_hard_sol_log_probs')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, mean_hard_sol_log_probs\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Mean logprobs of solution of hard problem",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'progress_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS progress_loss\n  FROM metrics\n  WHERE run_name IN ('mcts-val-mu-0_001-threshold-0_2-1','mcts-val-mu-0_001-threshold-0_2-10','mcts-val-mu-0_001-threshold-0_2-2','mcts-val-mu-0_001-threshold-0_2-3','mcts-val-mu-0_001-threshold-0_2-4','mcts-val-mu-0_001-threshold-0_2-5','mcts-val-mu-0_001-threshold-0_2-6','mcts-val-mu-0_001-threshold-0_2-7','mcts-val-mu-0_001-threshold-0_2-8','mcts-val-mu-0_001-threshold-0_2-9')\n    AND metric_name IN ('num_steps', 'progress_loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, progress_loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'progress_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS progress_loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'progress_loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, progress_loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Progress Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 3,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'train_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS train_loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'train_loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, train_loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'train_loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS train_loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'train_loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, train_loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Train Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 6,
+        "y": 8
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "hide": false,
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'loss' THEN value END)) \n      OVER (ORDER BY timestamp) AS loss\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'loss')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, loss\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Loss",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 15,
+        "x": 9,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'ratio_diff_problem_pairs' THEN value END)) \n      OVER (ORDER BY timestamp) AS ratio_diff_problem_pairs\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'ratio_diff_problem_pairs')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_name ORDER BY num_steps ASC) AS row_number,\n    run_name,\n    timestamp,\n    num_steps,\n    ratio_diff_problem_pairs\n  FROM grouped_metrics\n  WHERE num_steps IS NOT NULL\n)\nSELECT \n  run_name, \n  timestamp, \n  num_steps, \n  ratio_diff_problem_pairs\nFROM numbered_metrics\nWHERE row_number % 50 = 0\nORDER BY num_steps ASC;\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'ratio_diff_problem_pairs' THEN value END)) \n      OVER (ORDER BY timestamp) AS ratio_diff_problem_pairs\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'ratio_diff_problem_pairs')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n),\nnumbered_metrics AS (\n  SELECT \n    ROW_NUMBER() OVER (PARTITION BY run_name ORDER BY num_steps ASC) AS row_number,\n    run_name,\n    timestamp,\n    num_steps,\n    ratio_diff_problem_pairs\n  FROM grouped_metrics\n  WHERE num_steps IS NOT NULL\n)\nSELECT \n  run_name, \n  timestamp, \n  num_steps, \n  ratio_diff_problem_pairs\nFROM numbered_metrics\nWHERE row_number % 50 = 0\nORDER BY num_steps ASC;\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Ratio of Difficulty-Problem Pairs",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 16,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 0,
+        "y": 14
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_iterations"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'final_goals_proven' THEN value END)) \n      OVER (ORDER BY timestamp) AS final_goals_proven\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'final_goals_proven')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, final_goals_proven\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_iterations' THEN value END) AS num_iterations,\n    LEAD(MAX(CASE WHEN metric_name = 'final_goals_proven' THEN value END)) \n      OVER (ORDER BY timestamp) AS final_goals_proven\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_iterations', 'final_goals_proven')\n    AND metric_type = 'iteration'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_iterations, final_goals_proven\nFROM grouped_metrics\nWHERE num_iterations IS NOT NULL\nORDER BY num_iterations ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Final Goals Proven",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_iterations",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 15,
+        "x": 9,
+        "y": 16
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "num_steps"
+      },
+      "pluginVersion": "11.3.0+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'mu' THEN value END)) \n      OVER (ORDER BY timestamp) AS mu\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'mu')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, mu\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "queryType": "table",
+          "rawQueryText": "WITH grouped_metrics AS (\n  SELECT \n    id,\n    run_name,\n    timestamp,\n    MAX(CASE WHEN metric_name = 'num_steps' THEN value END) AS num_steps,\n    LEAD(MAX(CASE WHEN metric_name = 'mu' THEN value END)) \n      OVER (ORDER BY timestamp) AS mu\n  FROM metrics\n  WHERE run_name IN (${run:sqlstring})\n    AND metric_name IN ('num_steps', 'mu')\n    AND metric_type = 'step'\n  GROUP BY id, run_name, timestamp\n)\nSELECT run_name, timestamp, num_steps, mu\nFROM grouped_metrics\nWHERE num_steps IS NOT NULL\nORDER BY num_steps ASC\n",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Mu",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "run_name"
+            ],
+            "keepFields": false
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "num_steps",
+            "mode": "outer"
+          }
+        }
+      ],
+      "type": "trend"
+    }
+  ],
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "definition": "SELECT DISTINCT run_name\nfrom metrics;",
+        "multi": true,
+        "name": "run",
+        "options": [],
+        "query": "SELECT DISTINCT run_name\nfrom metrics;",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Experiment Overview - SQLite",
+  "uid": "ee42mtlzxrxmof",
+  "version": 15,
+  "weekStart": ""
+}
