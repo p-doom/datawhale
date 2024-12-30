@@ -10,8 +10,6 @@ for ARGUMENT in "$@"; do
     export "$KEY"="$VALUE"
 done
 
-# ... existing code ...
-
 if [ "$MODE" == "standalone" ]; then
     echo "Installing Prometheus, Grafana, and Loki as standalone executables..."
 
