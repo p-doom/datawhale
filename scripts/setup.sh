@@ -40,8 +40,9 @@ if [ "$MODE" == "standalone" ]; then
     LOKI_LATEST=$(curl -s https://api.github.com/repos/grafana/loki/releases/latest | grep 'tag_name' | cut -d\" -f4)
     curl -LO "https://github.com/grafana/loki/releases/download/$LOKI_LATEST/loki-$OS-amd64.zip"
     unzip "loki-$OS-amd64.zip"
-    sudo cp loki-$OS-amd64 /usr/local/bin/loki
+    sudo cp "loki-$OS-amd64" /usr/local/bin/loki
     rm "loki-$OS-amd64.zip"
+    rm "loki-$OS-amd64"
 
     # Copy configuration files to /usr/local
     # TODO: the configs don't exist yet

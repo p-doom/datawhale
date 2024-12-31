@@ -1,0 +1,11 @@
+[project]
+name = "example-experiment"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.18.0",
+    "scikit-learn>=0.24.0",
+    "python-logging-loki"
+]

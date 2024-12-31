@@ -6,7 +6,7 @@ GRAFANA_URL="http://localhost:3000/api/dashboards/db"
 ADMIN_USER="admin"
 # TODO: change the default password
 ADMIN_PASSWORD="admin"
-DASHBOARD_DIR="examples"
+DASHBOARD_DIR="examples/example_dashboards"
 
 # Loop through each JSON file in the directory
 for DASHBOARD_JSON_PATH in $DASHBOARD_DIR/*.json; do
