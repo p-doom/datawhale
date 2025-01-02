@@ -42,7 +42,7 @@ def train(model, X_train, y_train, epochs=5):
         # different thread.
         logger.info(
             f'Epoch [{epoch+1}/{epochs}], Loss: {loss:.4f}', 
-            extra={"tags": {"experiment": "example"}},
+            extra={"tags": {"experiment": "example"}, "metadata": {"epoch": f"{epoch}", "loss": f"{loss:.4f}"}},
             )
 
 # Example usage

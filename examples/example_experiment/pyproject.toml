@@ -7,5 +7,5 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.18.0",
     "scikit-learn>=0.24.0",
-    "python-logging-loki"
+    "python-logging-loki @ git+https://github.com/p-doom/python-logging-loki.git"
 ]
