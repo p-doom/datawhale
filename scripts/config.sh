@@ -1,7 +1,24 @@
 #!/bin/bash
 
+GRAFANA_FOLDER=$(find . -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
+
+# Check if Grafana is running
+if ! pgrep -x "grafana" > /dev/null; then
+    echo "Grafana is not running. Starting Grafana..."
+    nohup $GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER &> /dev/null &
+    echo "Waiting for Grafana to become ready..."
+    # FIXME: this is hardcoded
+    until curl -s http://localhost:3000/api/health | grep -q "ok"; do
+        sleep 1
+    done
+    echo "Grafana started and is ready."
+else
+    echo "Grafana is already running."
+fi
+
 echo "Adding example dashboards to grafana..."
 # Define variables
+# FIXME: this is hardcoded
 GRAFANA_URL="http://localhost:3000/api/dashboards/db"
 ADMIN_USER="admin"
 # TODO: change the default password
