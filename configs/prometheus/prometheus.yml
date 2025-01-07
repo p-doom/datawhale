@@ -3,11 +3,6 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-
-storage:
-  tsdb:
-    # We never delete data, which is not an issue since we only collect metrics
-    # during experiments. For our current use-case, writing to local disk is
-    # enough, but we would need to configure Thanos or Mimir if our metrics do
-    # not fit onto disk any more.
-    retention_time: 0
+- job_name: node
+  static_configs:
+  - targets: ['localhost:9100']
