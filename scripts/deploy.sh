@@ -5,10 +5,13 @@ start_service() {
     local service_name=$1
     local start_command=$2
     local health_check_url=$3
+    local log_file=$4
 
     if ! pgrep -f "$service_name" > /dev/null; then
         echo "$service_name is not running. Starting $service_name..."
-        nohup $start_command &> /dev/null &
+        mkdir -p "$(dirname "$log_file")"
+        touch "$log_file"
+        nohup $start_command &> "$log_file" &
         echo "Waiting for $service_name to become ready..."
         if [ "$service_name" == "grafana" ]; then
             until curl -s $health_check_url | grep -q "ok"; do
@@ -23,7 +26,7 @@ start_service() {
                 sleep 1
             done
         fi
-        echo "$service_name started and is ready."
+        echo "$service_name started and is ready. Logs can be found in $log_file."
     else
         echo "$service_name is already running."
     fi
@@ -33,12 +36,13 @@ LOCAL_DIR=./local
 
 # Start Grafana
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
-start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=configs/grafana/grafana.ini" "http://localhost:3000/api/health"
+GRAFANA_CONFIG=configs/grafana/grafana.ini
+start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:3000/api/health" "logs/grafana.log"
 
 # Start Loki
 # TODO: debug loki starting not working
 LOKI_EXECUTABLE=$(find $LOCAL_DIR -maxdepth 1 -type f -name "loki-linux-amd64" | head -n 1)
-start_service "loki-linux-amd64" "$LOKI_EXECUTABLE -config.file=configs/loki/loki-config.yml" "http://localhost:3100/ready"
+start_service "loki-linux-amd64" "$LOKI_EXECUTABLE -config.file=configs/loki/loki-config.yml" "http://localhost:3100/ready" "logs/loki.log"
 
 # Start Prometheus
 PROMETHEUS_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "prometheus-*" | head -n 1)
@@ -47,10 +51,10 @@ PROMETHEUS_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "prometheus-*" | h
 # enough, but we would need to configure remote write (or Thanos/Mimir) if our
 # metrics do not fit onto disk any more.
 PROMETHEUS_RETENTION_TIME=99999d
-start_service "prometheus" "$PROMETHEUS_FOLDER/prometheus --config.file=configs/prometheus/prometheus.yml --storage.tsdb.retention.time=$PROMETHEUS_RETENTION_TIME" "http://localhost:9090/-/ready"
+start_service "prometheus" "$PROMETHEUS_FOLDER/prometheus --config.file=configs/prometheus/prometheus.yml --storage.tsdb.retention.time=$PROMETHEUS_RETENTION_TIME" "http://localhost:9090/-/ready" "logs/prometheus.log"
 
 # Start Node Exporter
 NODE_EXPORTER_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "node_exporter-*" | head -n 1)
-start_service "node_exporter" "$NODE_EXPORTER_FOLDER/node_exporter" ""
+start_service "node_exporter" "$NODE_EXPORTER_FOLDER/node_exporter" "" "logs/node_exporter.log"
 
 echo "All services have been started."
