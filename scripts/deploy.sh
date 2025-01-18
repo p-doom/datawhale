@@ -2,34 +2,34 @@
 
 # Function to start a service if it's not already running
 start_service() {
-    local service_name=$1
-    local start_command=$2
-    local health_check_url=$3
-    local log_file=$4
+  local service_name=$1
+  local start_command=$2
+  local health_check_url=$3
+  local log_file=$4
 
-    if ! pgrep -f "$service_name" > /dev/null; then
-        echo "$service_name is not running. Starting $service_name..."
-        mkdir -p "$(dirname "$log_file")"
-        touch "$log_file"
-        nohup $start_command &> "$log_file" &
-        echo "Waiting for $service_name to become ready..."
-        if [ "$service_name" == "grafana" ]; then
-            until curl -s $health_check_url | grep -q "ok"; do
-                sleep 1
-            done
-        elif [ "$service_name" == "prometheus" ]; then
-            until curl -s -o /dev/null -w "%{http_code}" $health_check_url | grep -q "200"; do
-                sleep 1
-            done
-        elif [ "$service_name" == "loki-linux-amd64" ]; then
-            until curl -s $health_check_url | grep -q "ready"; do
-                sleep 1
-            done
-        fi
-        echo "$service_name started and is ready. Logs can be found in $log_file."
-    else
-        echo "$service_name is already running."
+  if ! pgrep -f "$service_name" >/dev/null; then
+    echo "$service_name is not running. Starting $service_name..."
+    mkdir -p "$(dirname "$log_file")"
+    touch "$log_file"
+    nohup $start_command &>"$log_file" &
+    echo "Waiting for $service_name to become ready..."
+    if [ "$service_name" == "grafana" ]; then
+      until curl -s $health_check_url | grep -q "ok"; do
+        sleep 1
+      done
+    elif [ "$service_name" == "prometheus" ]; then
+      until curl -s -o /dev/null -w "%{http_code}" $health_check_url | grep -q "200"; do
+        sleep 1
+      done
+    elif [ "$service_name" == "loki-linux-amd64" ]; then
+      until curl -s $health_check_url | grep -q "ready"; do
+        sleep 1
+      done
     fi
+    echo "$service_name started and is ready. Logs can be found in $log_file."
+  else
+    echo "$service_name is already running."
+  fi
 }
 
 LOCAL_DIR=./local
@@ -37,7 +37,8 @@ LOCAL_DIR=./local
 # Start Grafana
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
-start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:3000/api/health" "logs/grafana.log"
+GRAFANA_HTTP_PORT=$(grep -oP '(?<=http_port = )\d+' $GRAFANA_CONFIG)
+start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:$GRAFANA_HTTP_PORT/api/health" "logs/grafana.log"
 
 # Start Loki
 # TODO: debug loki starting not working
