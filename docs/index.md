@@ -24,7 +24,7 @@ git clone https://github.com/p-doom/datawhale.git
 bash scripts/setup.sh MODE=standalone
 ```
 
-We currently only support the `standalone` installation path, which downloads prebuilt binaries of Grafana, Loki, Prometheus, and node_exporter. Notably, this does not require package manager access, `sudo` rights, or cluster-side Docker support, and can thus be run on any (academic|on-prem|cloud) cluster. Docker-based installation support is on the roadmap.
+We currently only support the `standalone` installation path, which downloads prebuilt binaries of Grafana, Loki, Prometheus, node_exporter, and depending on the availability dcgm_exporter or nvml_exporter. Notably, this does not require package manager access, `sudo` rights, or cluster-side Docker support, and can thus be run on any (academic|on-prem|cloud) cluster. Docker-based installation support is on the roadmap. We currently only support `amd64-linux`, but the repository should be easily extendable to other architectures and operating systems. 
 
 You can run datawhale using `deploy.sh`:
 ```bash

@@ -37,8 +37,7 @@ LOCAL_DIR=./local
 # Start Grafana
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
-GRAFANA_HTTP_PORT=$(grep -oP '(?<=http_port = )\d+' $GRAFANA_CONFIG)
-start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:$GRAFANA_HTTP_PORT/api/health" "logs/grafana.log"
+start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:3000/api/health" "logs/grafana.log"
 
 # Start Loki
 # TODO: debug loki starting not working
@@ -57,5 +56,15 @@ start_service "prometheus" "$PROMETHEUS_FOLDER/prometheus --config.file=configs/
 # Start Node Exporter
 NODE_EXPORTER_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "node_exporter-*" | head -n 1)
 start_service "node_exporter" "$NODE_EXPORTER_FOLDER/node_exporter" "" "logs/node_exporter.log"
+
+# Add logic to start GPU Metrics Exporter
+if command -v dcgmi &>/dev/null; then
+  # TODO: untested
+  DCGM_EXPORTER_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "dcgm-exporter-*" | head -n 1)
+  start_service "dcgm-exporter" "$DCGM_EXPORTER_FOLDER/dcgm-exporter" "" "logs/dcgm-exporter.log"
+else
+  NVML_EXPORTER_EXECUTABLE=$(find $LOCAL_DIR -maxdepth 1 -type f -name "nvml_exporter-*" | head -n 1)
+  start_service "nvml_exporter" "$NVML_EXPORTER_PATH" "" "logs/nvml-exporter.log"
+fi
 
 echo "All services have been started."
