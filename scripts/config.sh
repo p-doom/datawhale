@@ -1,6 +1,7 @@
 #!/bin/bash
 
-GRAFANA_FOLDER=$(find . -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
+LOCAL_DIR=./local
+GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
 
 # Extract the http_port from grafana.ini
