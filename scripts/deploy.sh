@@ -64,7 +64,7 @@ if command -v dcgmi &>/dev/null; then
   start_service "dcgm-exporter" "$DCGM_EXPORTER_FOLDER/dcgm-exporter" "" "logs/dcgm-exporter.log"
 else
   NVML_EXPORTER_EXECUTABLE=$(find $LOCAL_DIR -maxdepth 1 -type f -name "nvml_exporter-*" | head -n 1)
-  start_service "nvml_exporter" "$NVML_EXPORTER_PATH" "" "logs/nvml-exporter.log"
+  start_service "nvml_exporter" "$NVML_EXPORTER_EXECUTABLE" "" "logs/nvml_exporter.log"
 fi
 
 echo "All services have been started."
