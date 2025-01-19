@@ -37,7 +37,8 @@ LOCAL_DIR=./local
 # Start Grafana
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
-start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:3000/api/health" "logs/grafana.log"
+GRAFANA_HTTP_PORT=$(grep -oP '(?<=http_port = )\d+' $GRAFANA_CONFIG)
+start_service "grafana" "$GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG" "http://localhost:$GRAFANA_HTTP_PORT/api/health" "logs/grafana.log"
 
 # Start Loki
 # TODO: debug loki starting not working
