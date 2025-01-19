@@ -53,14 +53,14 @@ add_dashboard_by_file() {
 if ! pgrep -x "grafana" >/dev/null; then
   echo "Grafana is not running. Starting Grafana..."
   nohup $GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG &>/dev/null &
-  echo "Waiting for Grafana to become ready..."
-  until curl -s "${GRAFANA_URL}api/health" | grep -q "ok"; do
-    sleep 1
-  done
-  echo "Grafana started and is ready."
 else
   echo "Grafana is already running."
 fi
+echo "Waiting for Grafana to become ready..."
+until curl -s "${GRAFANA_URL}api/health" | grep -q "ok"; do
+  sleep 1
+done
+echo "Grafana started and is ready."
 
 echo "Adding example dashboards to grafana..."
 for DASHBOARD_JSON_PATH in $EXPERIMENT_DASHBOARD_DIR/*.json; do
