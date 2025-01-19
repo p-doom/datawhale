@@ -56,9 +56,10 @@ if [ "$MODE" == "standalone" ]; then
   else
     echo "DCGM is not available. Installing nvml-exporter..."
     NVML_EXPORTER_LATEST=$(curl -s https://api.github.com/repos/p-doom/nvml_exporter/releases/latest | grep 'tag_name' | cut -d\" -f4)
-    NVML_EXPORTER_URL="https://github.com/p-doom/nvidia_gpu_prometheus_exporter/releases/download/$NVML_EXPORTER_LATEST/nvml_exporter-$NVML_EXPORTER_LATEST-x86_64"
+    NVML_EXPORTER_URL="https://github.com/p-doom/nvidia_gpu_prometheus_exporter/releases/download/$NVML_EXPORTER_LATEST/nvml_exporter-$NVML_EXPORTER_LATEST-x86_64.tar.gz"
     curl -LO "$NVML_EXPORTER_URL"
-    mv nvml_exporter-$NVML_EXPORTER_LATEST-x86_64 "$INSTALL_DIR"
+    tar -xzf "nvml_exporter-$NVML_EXPORTER_LATEST-x86_64.tar.gz" -C "$INSTALL_DIR"
+    rm -rf "nvml_exporter-$NVML_EXPORTER_LATEST-x86_64.tar.gz"
   fi
 
   echo "Standalone installation complete!"
