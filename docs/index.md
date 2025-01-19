@@ -15,3 +15,19 @@ template for this stack.
 Datawhale is designed to accommodate workflows from individual researchers
 working locally or on academic clusters (often without `sudo` rights) to
 entire research orgs with clusters in the cloud.
+
+## Installation
+
+Installing datawhale is as simple as cloning the repository and running `setup.sh`:
+```bash
+git clone https://github.com/p-doom/datawhale.git
+bash scripts/setup.sh MODE=standalone
+```
+
+We currently only support the `standalone` installation path, which downloads prebuilt binaries of Grafana, Loki, Prometheus, and node_exporter. Notably, this does not require package manager access, `sudo` rights, or cluster-side Docker support, and can thus be run on any (academic|on-prem|cloud) cluster. Docker-based installation support is on the roadmap.
+
+You can run datawhale using `deploy.sh`:
+```bash
+bash scripts/deploy.sh
+```
+
