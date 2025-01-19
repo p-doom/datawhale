@@ -17,17 +17,32 @@ working locally or on academic clusters (often without `sudo` rights) to
 entire research orgs with clusters in the cloud.
 
 ## Installation
+Datawhale supports single-server as well as multi-server configurations.
+Remote clusters usually require the multi-server installation path, such
+that jobs can be monitored across multiple nodes from a central location.
+Datawhale distinguishes between one `server` and multiple `clients`. A
+familiar analogy are the login (`server`) and compute (`client`) nodes on
+an HPC cluster.
 
 Installing datawhale is as simple as cloning the repository and running `setup.sh`:
 ```bash
+# server installation
 git clone https://github.com/p-doom/datawhale.git
-bash scripts/setup.sh MODE=standalone
+bash scripts/setup.sh MODE=<server|client>
 ```
 
-We currently only support the `standalone` installation path, which downloads prebuilt binaries of Grafana, Loki, Prometheus, node_exporter, and depending on the availability dcgm_exporter or nvml_exporter. Notably, this does not require package manager access, `sudo` rights, or cluster-side Docker support, and can thus be run on any (academic|on-prem|cloud) cluster. Docker-based installation support is on the roadmap. We currently only support `amd64-linux`, but the repository should be easily extendable to other architectures and operating systems. 
+We currently only support the `standalone` installation path. The `server`
+installation downloads prebuilt binaries of Grafana, Loki and Prometheus, while
+the `client` installation downloads node_exporter, and, depending on the
+availability, dcgm_exporter or nvml_exporter. Notably, this does not require 
+package manager access, `sudo` rights, or cluster-side Docker support, and can
+thus be run on any (academic|on-prem|cloud) cluster. Docker-based installation
+support is on the roadmap. We currently only support `amd64-linux`, but the 
+repository should be easily extendable to other architectures and operating
+systems. 
 
 You can run datawhale using `deploy.sh`:
 ```bash
-bash scripts/deploy.sh
+bash scripts/deploy.sh MODE=<server|client>
 ```
 
