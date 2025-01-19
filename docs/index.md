@@ -26,9 +26,11 @@ an HPC cluster.
 
 Installing datawhale is as simple as cloning the repository and running `setup.sh`:
 ```bash
-# server installation
 git clone https://github.com/p-doom/datawhale.git
-bash scripts/setup.sh MODE=<server|client>
+# server installation
+bash scripts/setup.sh MODE=server
+# client installation
+bash scripts/setup.sh MODE=client
 ```
 
 We currently only support the `standalone` installation path. The `server`
