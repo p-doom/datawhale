@@ -26,7 +26,7 @@ add_dashboard_by_id() {
 
   curl -s -X POST $GRAFANA_DASHBOARD_API \
     -H "Content-Type: application/json" \
-    -u $ADMIN_USER:$ADMIN_PASSWORD \
+    -u $GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD \
     --data-binary "@$payload_file"
 
   rm $dashboard_json_file
@@ -43,7 +43,7 @@ add_dashboard_by_file() {
 
   curl -s -X POST $GRAFANA_DASHBOARD_API \
     -H "Content-Type: application/json" \
-    -u $ADMIN_USER:$ADMIN_PASSWORD \
+    -u $GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD \
     --data-binary "@$payload_file"
 
   rm $payload_file
