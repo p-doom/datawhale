@@ -1,19 +1,5 @@
 #!/bin/bash
 
-set -e # Exit on any error
-
-# Set environment variables
-for ARGUMENT in "$@"; do
-  IFS='=' read -r KEY VALUE <<<"$ARGUMENT"
-  export "$KEY"="$VALUE"
-done
-
-# Check if MODE is standalone
-if [ "$MODE" != "standalone" ]; then
-  echo "Error: Only 'standalone' mode is currently supported."
-  exit 1
-fi
-
 # Function to start a service if it's not already running
 start_service() {
   local service_name=$1
@@ -45,6 +31,52 @@ start_service() {
     echo "$service_name is already running."
   fi
 }
+
+stop_service() {
+  local service_name=$1
+
+  if pgrep -f "$service_name" >/dev/null; then
+    echo "Stopping $service_name..."
+    pkill -f "$service_name"
+    echo "$service_name stopped."
+  else
+    echo "$service_name is not running."
+  fi
+}
+
+# Set environment variables
+for ARGUMENT in "$@"; do
+  if [[ "$ARGUMENT" == *"="* ]]; then
+    IFS='=' read -r KEY VALUE <<<"$ARGUMENT"
+    export "$KEY"="$VALUE"
+  fi
+done
+
+set -e # Exit on any error
+
+# Check for stop option
+if [ "$1" == "stop" ]; then
+  if [ "$ROLE" == "server" ]; then
+    stop_service "grafana"
+    stop_service "loki-linux-amd64"
+    stop_service "prometheus"
+  elif [ "$ROLE" == "client" ]; then
+    stop_service "node_exporter"
+    stop_service "dcgm-exporter"
+    stop_service "nvml_exporter"
+  else
+    echo "Error: Unsupported role. Please use 'server' or 'client'."
+    exit 1
+  fi
+  echo "All services have been stopped."
+  exit 0
+fi
+
+# Check if MODE is standalone
+if [ "$MODE" != "standalone" ]; then
+  echo "Error: Only 'standalone' mode is currently supported."
+  exit 1
+fi
 
 LOCAL_DIR=./local
 
