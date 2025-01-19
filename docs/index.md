@@ -28,9 +28,9 @@ Installing datawhale is as simple as cloning the repository and running `setup.s
 ```bash
 git clone https://github.com/p-doom/datawhale.git
 # server installation
-bash scripts/setup.sh ROLE=server
+bash scripts/setup.sh ROLE=server MODE=standalone
 # client installation
-bash scripts/setup.sh ROLE=client
+bash scripts/setup.sh ROLE=client MODE=standalone
 ```
 
 We currently only support the `standalone` installation path. The `server`
@@ -45,6 +45,6 @@ systems.
 
 You can run datawhale using `deploy.sh`:
 ```bash
-bash scripts/deploy.sh ROLE=<server|client>
+bash scripts/deploy.sh ROLE=<server|client> MODE=standalone
 ```
 
