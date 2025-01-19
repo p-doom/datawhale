@@ -1,5 +1,19 @@
 #!/bin/bash
 
+set -e # Exit on any error
+
+# Set environment variables
+for ARGUMENT in "$@"; do
+  IFS='=' read -r KEY VALUE <<<"$ARGUMENT"
+  export "$KEY"="$VALUE"
+done
+
+# Check if MODE is standalone
+if [ "$MODE" != "standalone" ]; then
+  echo "Error: Only 'standalone' mode is currently supported."
+  exit 1
+fi
+
 LOCAL_DIR=./local # FIXME: this only works for the standalone setup
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
