@@ -15,7 +15,7 @@ experiment_name = "example_experiment"
 
 handler = logging_loki.LokiHandler(
     url="http://localhost:3100/loki/api/v1/push",
-    tags={"application": experiment_name},
+    tags={"experiment_name": experiment_name},
     # auth=("admin", "admin"),
     version="1",
 )
