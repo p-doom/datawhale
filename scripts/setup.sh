@@ -105,6 +105,6 @@ fi
 if [ "$ROLE" == "client" ]; then
   echo "Forwarding server ports to this instance..."
   export $(cat $ENV_FILE | xargs)
-  scp -i "$ORCHESTRATOR_KEY" $DSTACK_SSH_DIR/* $ORCHESTRATOR_ADDRESS:$DSTACK_SSH_DIR
-  ssh -f -N -F $DSTACK_SSH_DIR/config vscode -L 9100:localhost:9100 -L 9445:localhost:9445
+  scp -i "$(eval echo $ORCHESTRATOR_KEY)" $(eval echo $DSTACK_SSH_DIR)/* $ORCHESTRATOR_ADDRESS:$DSTACK_SSH_DIR
+  ssh -f -N -F $(eval echo $DSTACK_SSH_DIR)/config vscode -L 9100:localhost:9100 -L 9445:localhost:9445
 fi
