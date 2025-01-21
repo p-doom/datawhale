@@ -4,7 +4,7 @@
 
 set -e # Exit on any error
 
-ENV_FILE=~/.env
+ENV_FILE='~/.env'
 
 # Set environment variables
 for ARGUMENT in "$@"; do
@@ -103,8 +103,11 @@ if [ "$ROLE" == "server" ]; then
 fi
 
 if [ "$ROLE" == "client" ]; then
-  echo "Forwarding server ports to this instance..."
-  export $(cat $ENV_FILE | xargs)
-  scp -i "$(eval echo $ORCHESTRATOR_KEY)" $(eval echo $DSTACK_SSH_DIR)/* $ORCHESTRATOR_ADDRESS:$DSTACK_SSH_DIR
-  ssh -f -N -F $(eval echo $DSTACK_SSH_DIR)/config vscode -L 9100:localhost:9100 -L 9445:localhost:9445
+  echo "Setting up reverse SSH tunnel to server..."
+  export $(cat $(eval echo $ENV_FILE) | xargs)
+  ssh -i "$ORCHESTRATOR_KEY" \
+    -f -N \
+    -R 9100:localhost:9100 \
+    -R 9445:localhost:9445 \
+    "$ORCHESTRATOR_ADDRESS"
 fi
