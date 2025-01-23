@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# You need to specify a MODE: docker, system, standalone.
+# You need to specify a MODE: docker, standalone.
 
 set -e # Exit on any error
 
@@ -70,29 +70,12 @@ if [ "$MODE" == "standalone" ]; then
   fi
 
   echo "Standalone installation complete!"
-elif [ "$MODE" == "system" ]; then
-  # Install using package manager
-  echo "Installing Prometheus, Grafana, and Loki using package manager..."
-  sudo apt-get update
-  sudo apt-get install -y prometheus grafana loki
-
-  # Restart services
-  echo "Configuring Prometheus..."
-  sudo systemctl restart prometheus
-
-  echo "Configuring Loki..."
-  sudo systemctl restart loki
-
-  echo "Configuring Grafana..."
-  sudo systemctl restart grafana
-
-  echo "Installation complete!"
 elif [ "$MODE" == "docker" ]; then
   # TODO: add Docker support
-  echo "Error: Docker is currently not supported. Please use 'standalone' or 'system'."
+  echo "Error: Docker is currently not supported. Please use 'standalone'."
   exit 1
 else
-  echo "Error: Unsupported mode. Please use 'standalone', 'system', or 'docker'."
+  echo "Error: Unsupported mode. Please use 'standalone' or 'docker'."
   exit 1
 fi
 
