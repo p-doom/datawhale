@@ -103,7 +103,7 @@ if [ "$ROLE" == "server" ]; then
   fi
 elif [ "$ROLE" == "client" ]; then
   echo "Setting up reverse SSH tunnel to server..."
-  export $(cat $(eval echo $ENV_FILE) | xargs)
+  export $(cat $ENV_FILE | xargs)
   ssh -i "$ORCHESTRATOR_KEY" \
     -f -N \
     -R 9100:localhost:9100 \
