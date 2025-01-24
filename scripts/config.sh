@@ -28,31 +28,13 @@ GRAFANA_DASHBOARD_API="${GRAFANA_URL}api/dashboards/db"
 GRAFANA_ADMIN_USER="admin"
 GRAFANA_ADMIN_PASSWORD="admin" # TODO: change the default password
 
-NODE_EXPORTER_DASHBOARD_ID=1860
+# TODO: Add datawhale_dcgm.json
+# An integrated dashboard visualizing DCGM metrics is on the roadmap.
+# For now you can use nvidia's dcgm dashboard with the following dashboard id
 DCGM_EXPORTER_DASHBOARD_ID=12239
-NVML_EXPORTER_DASHBOARD_PATH=dashboards/nvml_exporter/nvml_exporter_dashboard.json
-EXPERIMENT_DASHBOARD_DIR="dashboards/experiment"
+DATAWHALE_NVML_DASHBOARD=dashboards/datawhale_nvml.json
 
 ENV_FILE=~/.env
-
-add_dashboard_by_id() {
-  local dashboard_id=$1
-  local dashboard_url="https://grafana.com/api/dashboards/$dashboard_id/revisions/latest/download"
-  local dashboard_json_file=$(mktemp)
-  local payload_file=$(mktemp)
-
-  curl -s $dashboard_url -o $dashboard_json_file
-
-  jq -n --slurpfile dashboard "$dashboard_json_file" '{"dashboard": $dashboard[0], "overwrite": true}' >$payload_file
-
-  curl -s -X POST $GRAFANA_DASHBOARD_API \
-    -H "Content-Type: application/json" \
-    -u $GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD \
-    --data-binary "@$payload_file"
-
-  rm $dashboard_json_file
-  rm $payload_file
-}
 
 add_dashboard_by_file() {
   local dashboard_json_file=$1
@@ -84,22 +66,12 @@ if [ "$ROLE" == "server" ]; then
   done
   echo "Grafana started and is ready."
 
-  echo "Adding example dashboards to grafana..."
-  for DASHBOARD_JSON_PATH in $EXPERIMENT_DASHBOARD_DIR/*.json; do
-    add_dashboard_by_file "$DASHBOARD_JSON_PATH"
-  done
-
-  # Add node_exporter dashboard
-  echo "Adding node_exporter dashboard to grafana..."
-  add_dashboard_by_id "$NODE_EXPORTER_DASHBOARD_ID"
-
-  # Add dcgm_exporter || nvml_exporter dashboard
+  echo "Adding datawhale dashboard to grafana..."
   if command -v dcgmi &>/dev/null; then
-    echo "Adding dcgm_exporter dashboard to grafana..."
-    add_dashboard_by_id "$DCGM_EXPORTER_DASHBOARD_ID"
+    echo "An integrated datawhale DCGM dashboard is on the roadmap. Please manually add nvidia's DCGM dashboard for now:"
+    echo "dashboard_id: $DCGM_EXPORTER_DASHBOARD_ID"
   else
-    echo "Adding nvml_exporter dashboard to grafana..."
-    add_dashboard_by_file "$NVML_EXPORTER_DASHBOARD_PATH"
+    add_dashboard_by_file "$DATAWHALE_NVML_DASHBOARD"
   fi
 elif [ "$ROLE" == "client" ]; then
   echo "[Grafana, Prometheus] Setting up reverse SSH tunnel to server..."
