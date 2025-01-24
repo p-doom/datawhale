@@ -14,6 +14,11 @@ if [ "$MODE" != "standalone" ]; then
   exit 1
 fi
 
+if [ "$ROLE" != "server" ] && [ "$ROLE" != "client" ]; then
+  echo "Error: Unsupported role. Please use 'server' or 'client'."
+  exit 1
+fi
+
 LOCAL_DIR=./local # FIXME: this only works for the standalone setup
 GRAFANA_FOLDER=$(find $LOCAL_DIR -maxdepth 1 -type d -name "grafana-v*" | head -n 1)
 GRAFANA_CONFIG=configs/grafana/grafana.ini
@@ -27,6 +32,8 @@ NODE_EXPORTER_DASHBOARD_ID=1860
 DCGM_EXPORTER_DASHBOARD_ID=12239
 NVML_EXPORTER_DASHBOARD_PATH=dashboards/nvml_exporter/nvml_exporter_dashboard.json
 EXPERIMENT_DASHBOARD_DIR="dashboards/experiment"
+
+ENV_FILE='~/.env'
 
 add_dashboard_by_id() {
   local dashboard_id=$1
@@ -63,34 +70,43 @@ add_dashboard_by_file() {
   rm $payload_file
 }
 
-# Check if Grafana is running
-if ! pgrep -x "grafana" >/dev/null; then
-  echo "Grafana is not running. Starting Grafana..."
-  nohup $GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG &>/dev/null &
-else
-  echo "Grafana is already running."
+if [ "$ROLE" == "server" ]; then
+  # Check if Grafana is running
+  if ! pgrep -x "grafana" >/dev/null; then
+    echo "Grafana is not running. Starting Grafana..."
+    nohup $GRAFANA_FOLDER/bin/grafana server --homepath $GRAFANA_FOLDER --config=$GRAFANA_CONFIG &>/dev/null &
+  else
+    echo "Grafana is already running."
+  fi
+  echo "Waiting for Grafana to become ready..."
+  until curl -s "${GRAFANA_URL}api/health" | grep -q "ok"; do
+    sleep 1
+  done
+  echo "Grafana started and is ready."
+
+  echo "Adding example dashboards to grafana..."
+  for DASHBOARD_JSON_PATH in $EXPERIMENT_DASHBOARD_DIR/*.json; do
+    add_dashboard_by_file "$DASHBOARD_JSON_PATH"
+  done
+
+  # Add node_exporter dashboard
+  echo "Adding node_exporter dashboard to grafana..."
+  add_dashboard_by_id "$NODE_EXPORTER_DASHBOARD_ID"
+
+  # Add dcgm_exporter || nvml_exporter dashboard
+  if command -v dcgmi &>/dev/null; then
+    echo "Adding dcgm_exporter dashboard to grafana..."
+    add_dashboard_by_id "$DCGM_EXPORTER_DASHBOARD_ID"
+  else
+    echo "Adding nvml_exporter dashboard to grafana..."
+    add_dashboard_by_file "$NVML_EXPORTER_DASHBOARD_PATH"
+  fi
+elif [ "$ROLE" == "client" ]; then
+  echo "Setting up reverse SSH tunnel to server..."
+  export $(cat $(eval echo $ENV_FILE) | xargs)
+  ssh -i "$ORCHESTRATOR_KEY" \
+    -f -N \
+    -R 9100:localhost:9100 \
+    -R 9445:localhost:9445 \
+    "$ORCHESTRATOR_ADDRESS"
 fi
-echo "Waiting for Grafana to become ready..."
-until curl -s "${GRAFANA_URL}api/health" | grep -q "ok"; do
-  sleep 1
-done
-echo "Grafana started and is ready."
-
-echo "Adding example dashboards to grafana..."
-for DASHBOARD_JSON_PATH in $EXPERIMENT_DASHBOARD_DIR/*.json; do
-  add_dashboard_by_file "$DASHBOARD_JSON_PATH"
-done
-
-# Add node_exporter dashboard
-echo "Adding node_exporter dashboard to grafana..."
-add_dashboard_by_id "$NODE_EXPORTER_DASHBOARD_ID"
-
-# Add dcgm_exporter || nvml_exporter dashboard
-if command -v dcgmi &>/dev/null; then
-  echo "Adding dcgm_exporter dashboard to grafana..."
-  add_dashboard_by_id "$DCGM_EXPORTER_DASHBOARD_ID"
-else
-  echo "Adding nvml_exporter dashboard to grafana..."
-  add_dashboard_by_file "$NVML_EXPORTER_DASHBOARD_PATH"
-fi
-

@@ -4,8 +4,6 @@
 
 set -e # Exit on any error
 
-ENV_FILE='~/.env'
-
 # Set environment variables
 for ARGUMENT in "$@"; do
   IFS='=' read -r KEY VALUE <<<"$ARGUMENT"
@@ -79,18 +77,6 @@ else
   exit 1
 fi
 
-if [ "$ROLE" == "server" ]; then
-  # Executing configuration script
-  echo "Executing config.sh..."
-  bash scripts/config.sh MODE=$MODE
-fi
-
-if [ "$ROLE" == "client" ]; then
-  echo "Setting up reverse SSH tunnel to server..."
-  export $(cat $(eval echo $ENV_FILE) | xargs)
-  ssh -i "$ORCHESTRATOR_KEY" \
-    -f -N \
-    -R 9100:localhost:9100 \
-    -R 9445:localhost:9445 \
-    "$ORCHESTRATOR_ADDRESS"
-fi
+# Executing configuration script
+echo "Executing config.sh..."
+bash scripts/config.sh MODE=$MODE ROLE=$ROLE
