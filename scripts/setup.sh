@@ -2,9 +2,8 @@
 
 # You need to specify a MODE: docker, standalone.
 
-set -e # Exit on any error
+set -e
 
-# Set environment variables
 for ARGUMENT in "$@"; do
   IFS='=' read -r KEY VALUE <<<"$ARGUMENT"
   export "$KEY"="$VALUE"
@@ -16,24 +15,20 @@ if [ "$MODE" == "standalone" ]; then
   # Determine OS
   OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
-  # Create a subdirectory for installations
   INSTALL_DIR="local"
   mkdir -p "$INSTALL_DIR"
 
   if [ "$ROLE" == "server" ]; then
-    # Install Prometheus
     PROMETHEUS_LATEST=$(curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | grep 'tag_name' | cut -d\" -f4)
     curl -LO "https://github.com/prometheus/prometheus/releases/download/$PROMETHEUS_LATEST/prometheus-${PROMETHEUS_LATEST#v}.$OS-amd64.tar.gz"
     tar xvf "prometheus-${PROMETHEUS_LATEST#v}.$OS-amd64.tar.gz" -C "$INSTALL_DIR"
     rm -rf "prometheus-${PROMETHEUS_LATEST#v}.$OS-amd64.tar.gz"
 
-    # Install Grafana
     GRAFANA_LATEST=$(curl -s https://api.github.com/repos/grafana/grafana/releases/latest | grep 'tag_name' | cut -d\" -f4 | sed 's/^v//')
     curl -LO "https://dl.grafana.com/oss/release/grafana-$GRAFANA_LATEST.$OS-amd64.tar.gz"
     tar -zxvf "grafana-$GRAFANA_LATEST.$OS-amd64.tar.gz" -C "$INSTALL_DIR"
     rm -rf "grafana-$GRAFANA_LATEST.$OS-amd64.tar.gz"
 
-    # Install Loki
     LOKI_LATEST=$(curl -s https://api.github.com/repos/grafana/loki/releases/latest | grep 'tag_name' | cut -d\" -f4)
     curl -LO "https://github.com/grafana/loki/releases/download/$LOKI_LATEST/loki-$OS-amd64.zip"
     unzip "loki-$OS-amd64.zip" -d "$INSTALL_DIR"
@@ -77,6 +72,8 @@ else
   exit 1
 fi
 
-# Executing configuration script
-echo "Executing config.sh..."
+echo "Configuring datawhale..."
 bash scripts/config.sh MODE=$MODE ROLE=$ROLE
+
+echo "Deploying datawhale..."
+bash scripts/deploy.sh MODE=$MODE ROLE=$ROLE
