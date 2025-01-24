@@ -33,7 +33,7 @@ DCGM_EXPORTER_DASHBOARD_ID=12239
 NVML_EXPORTER_DASHBOARD_PATH=dashboards/nvml_exporter/nvml_exporter_dashboard.json
 EXPERIMENT_DASHBOARD_DIR="dashboards/experiment"
 
-ENV_FILE='~/.env'
+ENV_FILE=~/.env
 
 add_dashboard_by_id() {
   local dashboard_id=$1
@@ -102,11 +102,14 @@ if [ "$ROLE" == "server" ]; then
     add_dashboard_by_file "$NVML_EXPORTER_DASHBOARD_PATH"
   fi
 elif [ "$ROLE" == "client" ]; then
-  echo "Setting up reverse SSH tunnel to server..."
-  export $(cat $ENV_FILE | xargs)
+  echo "[Grafana, Prometheus] Setting up reverse SSH tunnel to server..."
+  source $ENV_FILE
   ssh -i "$ORCHESTRATOR_KEY" \
     -f -N \
     -R 9100:localhost:9100 \
     -R 9445:localhost:9445 \
     "$ORCHESTRATOR_ADDRESS"
+  echo "[Loki] Setting up SSH tunnel to server..."
+  # TODO: Change loki-push to loki-pull & remove connection from client to server
+  ssh -f -N -i $ORCHESTRATOR_KEY $ORCHESTRATOR_ADDRESS -L 3100:localhost:3100
 fi
