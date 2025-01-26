@@ -72,8 +72,8 @@ else
   exit 1
 fi
 
-echo "Configuring datawhale..."
-bash scripts/config.sh MODE=$MODE ROLE=$ROLE
-
 echo "Deploying datawhale..."
 bash scripts/deploy.sh MODE=$MODE ROLE=$ROLE
+
+echo "Configuring datawhale..."
+bash scripts/config.sh MODE=$MODE ROLE=$ROLE
