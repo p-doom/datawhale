@@ -76,12 +76,12 @@ if [ "$ROLE" == "server" ]; then
 elif [ "$ROLE" == "client" ]; then
   echo "[Grafana, Prometheus] Setting up reverse SSH tunnel to server..."
   source $ENV_FILE
-  ssh -i "$ORCHESTRATOR_KEY" \
+  ssh -o StrictHostKeyChecking=no -i "$ORCHESTRATOR_KEY" \
     -f -N \
     -R 9100:localhost:9100 \
     -R 9445:localhost:9445 \
     "$ORCHESTRATOR_ADDRESS"
   echo "[Loki] Setting up SSH tunnel to server..."
   # TODO: Change loki-push to loki-pull & remove connection from client to server
-  ssh -f -N -i $ORCHESTRATOR_KEY $ORCHESTRATOR_ADDRESS -L 3100:localhost:3100
+  ssh -o StrictHostKeyChecking=no -f -N -i $ORCHESTRATOR_KEY $ORCHESTRATOR_ADDRESS -L 3100:localhost:3100
 fi
