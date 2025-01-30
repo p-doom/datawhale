@@ -76,11 +76,34 @@ if [ "$ROLE" == "server" ]; then
 elif [ "$ROLE" == "client" ]; then
   echo "[Grafana, Prometheus] Setting up reverse SSH tunnel to server..."
   source $ENV_FILE
-  ssh -o StrictHostKeyChecking=no -i "$ORCHESTRATOR_KEY" \
-    -f -N \
-    -R 9100:localhost:9100 \
-    -R 9445:localhost:9445 \
-    "$ORCHESTRATOR_ADDRESS"
+  # FIXME: This is an ad-hoc workaround
+  check_remote_port() {
+    local port=$1
+    ssh -o StrictHostKeyChecking=no -i "$ORCHESTRATOR_KEY" "$ORCHESTRATOR_ADDRESS" "nc -z localhost $port" &>/dev/null
+    return $?
+  }
+
+  setup_ssh_tunnel() {
+    local remote_port_1=9100
+    local remote_port_2=9445
+
+    while true; do
+      if ! check_remote_port $remote_port_1 && ! check_remote_port $remote_port_2; then
+        ssh -o StrictHostKeyChecking=no -i "$ORCHESTRATOR_KEY" \
+          -f -N \
+          -R $remote_port_1:localhost:9100 \
+          -R $remote_port_2:localhost:9445 \
+          "$ORCHESTRATOR_ADDRESS"
+        break
+      else
+        echo "Remote ports $remote_port_1 or $remote_port_2 are occupied. Incrementing ports and retrying..."
+        remote_port_1=$((remote_port_1 + 1))
+        remote_port_2=$((remote_port_2 + 1))
+      fi
+    done
+  }
+
+  setup_ssh_tunnel
   echo "[Loki] Setting up SSH tunnel to server..."
   # TODO: Change loki-push to loki-pull & remove connection from client to server
   ssh -o StrictHostKeyChecking=no -f -N -i $ORCHESTRATOR_KEY $ORCHESTRATOR_ADDRESS -L 3100:localhost:3100
