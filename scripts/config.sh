@@ -105,6 +105,5 @@ elif [ "$ROLE" == "client" ]; then
 
   setup_ssh_tunnel
   echo "[Loki] Setting up SSH tunnel to server..."
-  # TODO: Change loki-push to loki-pull & remove connection from client to server
   ssh -o StrictHostKeyChecking=no -f -N -i $ORCHESTRATOR_KEY $ORCHESTRATOR_ADDRESS -L 3100:localhost:3100
 fi

@@ -11,7 +11,11 @@ start_service() {
     echo "$service_name is not running. Starting $service_name..."
     mkdir -p "$(dirname "$log_file")"
     touch "$log_file"
-    nohup $start_command &>"$log_file" &
+    if [ "$SAVE_STDOUT" == "true" ]; then
+      nohup $start_command &>"$log_file" &
+    else
+      nohup $start_command &>/dev/null &
+    fi
     echo "Waiting for $service_name to become ready..."
     if [ "$service_name" == "grafana" ]; then
       until curl -s $health_check_url | grep -q "ok"; do
