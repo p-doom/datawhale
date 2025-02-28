@@ -30,7 +30,10 @@ start_service() {
         sleep 1
       done
     fi
-    echo "$service_name started and is ready. Logs can be found in $log_file."
+    echo "$service_name started and is ready."
+    if [ "$SAVE_STDOUT" == "true" ]; then
+      echo "Logs can be found in $log_file."
+    fi
   else
     echo "$service_name is already running."
   fi
