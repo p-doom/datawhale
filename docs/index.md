@@ -1,3 +1,11 @@
+<h2>
+  <a target="_blank" href="https://github.com/p-doom/datawhale">
+    <picture>
+      <img alt="datawhale" src="https://raw.githubusercontent.com/p-doom/datawhale/master/docs/assets/images/datawhale-logo.png" width="350px"/>
+    </picture>
+  </a>
+</h2>
+
 # datawhale
 
 [![License](https://img.shields.io/github/license/p-doom/datawhale)](https://github.com/p-doom/datawhale/blob/main/LICENSE)
